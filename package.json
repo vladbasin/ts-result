@@ -1,0 +1,16 @@
+{
+    "name": "@vladbasin/ts-result",
+    "version": "1.0.0",
+    "description": "Wrapper around promise for functional programming",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "scripts": {
+        "prepublishOnly": "rm -r -f dist && cd src && barrelsby --delete && cd .. && tsc"
+    },
+    "author": "Vlad Basin",
+    "license": "GPL-3.0-only",
+    "devDependencies": {
+        "barrelsby": "^2.2.0",
+        "typescript": "^3.9.7"
+    }
+}
