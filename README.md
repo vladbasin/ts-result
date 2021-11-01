@@ -21,6 +21,8 @@ const result = Result
     .ensure(data => data.money > 10, "Not enough money")
     .onFailure(error => alert(error))
     .onSuccess(data => purchase(data.item))
+    .delay(3000)
+    .onBoth(result => hideLoader())
     //and so on...
     //.onFailure(error => );
     //.onSuccess(() => redirectToPage("/home")))

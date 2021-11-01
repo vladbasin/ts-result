@@ -5,9 +5,13 @@
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "homepage": "https://github.com/vladbasin/ts-result",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/vladbasin/ts-result.git"
+    },
     "keywords": [
         "promise",
-        "functional-programming",
+        "functional programming",
         "result",
         "async",
         "await"
