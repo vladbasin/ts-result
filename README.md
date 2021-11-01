@@ -9,7 +9,7 @@ Wrapper around promise for functional programming
 ## Getting Started
 
 Let's assume you have `loadDataFromBackendAsync()` method, which loads data from backend and returns Promise.
-Normally you use try\catch, async\await, then\catch to handle results. With this library you can write nice readable chains of methods instead:
+Normally you use try\catch, async\await, then\catch, if\then\else to handle results. With this library you can write nice readable chains of methods instead:
 
 ```typescript
 
@@ -23,7 +23,8 @@ const result = Result
     .onSuccess(data => purchase(data.item))
     //and so on...
     //.onFailure(error => );
-    //.onSuccess(() => redirectToPage("/home")));
+    //.onSuccess(() => redirectToPage("/home")))
+    .run();
 ```
 
 See inline comments for more documentation

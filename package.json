@@ -1,14 +1,22 @@
 {
     "name": "@vladbasin/ts-result",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "description": "Wrapper around promise for functional programming",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
+    "homepage": "https://github.com/vladbasin/ts-result",
+    "keywords": [
+        "promise",
+        "functional-programming",
+        "result",
+        "async",
+        "await"
+    ],
+    "author": "Vlad Basin <vladbasin@gmail.com>",
+    "license": "GPL-3.0-only",
     "scripts": {
         "prepublishOnly": "rm -r -f dist && cd src && barrelsby --delete && cd .. && tsc"
     },
-    "author": "Vlad Basin",
-    "license": "GPL-3.0-only",
     "devDependencies": {
         "barrelsby": "^2.2.0",
         "typescript": "^3.9.7"
