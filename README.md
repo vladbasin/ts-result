@@ -90,7 +90,7 @@ With this library (readable code, reusable logic)
 import { Result } from "@vladbasin/Result";
 
 Result
-    .Ok(username)
+    .Start()
     .onSuccess(() => validateUsername(username))
     .onSuccess(() => validatePassword(password))
     .onSuccess(() => validatePasswordRepeat(passwordRepeat, password))
