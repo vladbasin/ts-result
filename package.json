@@ -19,6 +19,7 @@
     "author": "Vlad Basin <vladbasin@gmail.com>",
     "license": "GPL-3.0-only",
     "scripts": {
+        "ci": "npm install",
         "prepublishOnly": "rm -r -f dist && cd src && barrelsby --delete && cd .. && tsc",
         "test": "jest --no-cache"
     },
