@@ -69,8 +69,9 @@ export class Result<T> {
     public ensureAsResult(ensurer: (value: T) => Result<boolean>, error: string): Result<T> {
         return this.onSuccess(value => ensurer(value)
             .onSuccess(condition => condition ? Result.Ok(value) : Result.Fail<T>(error))
-            .onFailure(_ => Result.Fail<T>(error))
-            .run());
+            .onFailureCompensate(_ => Result.Fail<T>(error))
+            .run()
+        );
     }
 
     /**
@@ -93,7 +94,7 @@ export class Result<T> {
     }
 
     /**
-     * Executes action in case of success
+     * Executes action in case of success (same as onSuccessMap)
      * @param action Action to execute in case of success
      * @returns If previous Result is success, return new Result from action. If previous Result is failure, does nothing (returns previous Result)
      */
@@ -105,13 +106,48 @@ export class Result<T> {
     }
 
     /**
-     * Executes action in case of success when condition is true
+     * Executes action in case of success. Payload changes to action's result.
+     * @param action Action to execute in case of success
+     * @returns If previous Result is success, return new Result from action. If previous Result is failure, does nothing (returns previous Result)
+     */
+    public onSuccessMap<V>(action: ResultActionType<T, V>): Result<V> {
+        return this.onSuccess(action);
+    }
+
+    /**
+     * Executes action in case of success. Payload from previous result is NOT transformed by action result.
+     * @param action Action to execute in case of success
+     * @returns If previous Result is success, return new Result from action. If previous Result is failure, does nothing (returns previous Result)
+     */
+    public onSuccessExecute(action: ResultActionType<T, any>): Result<T> {
+        var previousPayload: any = undefined;
+
+        return this
+            .onSuccess(payload => {
+                previousPayload = payload;
+                return action(payload);
+            })
+            .onSuccess(() => previousPayload as T);
+    }
+
+    /**
+     * Executes action in case of success when condition is true. Payload changes to action's result.
      * @param condition Condition to check
      * @param action Action to execute in case of success
      * @returns If previous Result is success and condition is true, then return new Result from action. If previous Result is success and condition is false, does nothing (returns previous Result). If previous Result is failure, does nothing (returns previous Result)
      */
-    public onSuccessWhen(condition: (arg: T) => boolean, action: ResultActionType<T, T>): Result<T> {
-        return this.onSuccess(arg => !!!condition(arg) ? arg : action(arg));
+    public onSuccessWhenMap(condition: (arg: T) => boolean, action: ResultActionType<T, T>): Result<T> {
+        return this.onSuccessMap(arg => !!!condition(arg) ? arg : action(arg));
+    }
+
+    /**
+     * Executes action in case of success when condition is true. Payload from previous result is NOT transformed by action result.
+     * @param condition Condition to check
+     * @param action Action to execute in case of success
+     * @returns If previous Result is success and condition is true, then return new Result from action. If previous Result is success and condition is false, does nothing (returns previous Result). If previous Result is failure, does nothing (returns previous Result)
+     */
+    public onSuccessWhenExecute(condition: (arg: T) => boolean, action: ResultActionType<T, T>): Result<T> {
+        return this.onSuccessExecute(arg => !!!condition(arg) ? arg : action(arg));
     }
 
     /**
@@ -179,6 +215,8 @@ export class Result<T> {
                 return action.call(this._context, this)
             })
             .onFailureCompensate(error => {
+                this.ignorePromiseError();
+
                 if (!isExecuted) {
                     return action.call(this._context, this)
                 }
