@@ -96,4 +96,5 @@ Result
     .run();
 ```
 
-See inline comments for more documentation
+### Other handy API
+This library also provides API to **retry(), delay(), and combine()** asynchonous code. See inline comments for more documentation
