@@ -1,6 +1,6 @@
 {
     "name": "@vladbasin/ts-result",
-    "version": "1.1.4",
+    "version": "1.1.5",
     "description": "Wrapper around promise for functional programming",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
