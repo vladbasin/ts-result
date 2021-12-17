@@ -2,12 +2,29 @@ import { Result } from "../src/Result";
 import { executeResult } from "./executeResult";
 
 describe(".ensureAsResult()", () => {
-    test("fails when condition is false", done => {
+    test("fails when result fails", done => {
         const record = jest.fn();
 
         executeResult(done, Result
             .Ok(1)
             .ensureAsResult(payload => Result.Create(payload === 2, "error"), "error")
+            .onFailure(error => {
+                expect(error).toBe("error");
+                record();
+            })
+            .onSuccess(_ => done("Success not expected")),
+            () => {
+                expect(record).toBeCalledTimes(1);
+            }
+        );
+    });
+
+    test("fails when condition is false", done => {
+        const record = jest.fn();
+
+        executeResult(done, Result
+            .Ok(1)
+            .ensureAsResult(payload => Result.Ok(false), "error")
             .onFailure(error => {
                 expect(error).toBe("error");
                 record();
