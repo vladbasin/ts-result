@@ -1,6 +1,8 @@
 # ts-result
 
-This library brings elements of functional programming to TypeScript/JavaScript. See Use cases section for details
+[![Node.js CI](https://github.com/vladbasin/ts-result/actions/workflows/node.js.yml/badge.svg?branch=master)](https://github.com/vladbasin/ts-result/actions/workflows/node.js.yml)
+
+This library brings elements of functional programming to TypeScript/JavaScript. See Use cases section for details.
 
 ## Install
 
