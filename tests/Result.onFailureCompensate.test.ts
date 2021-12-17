@@ -44,4 +44,42 @@ describe(".onFailureCompensate()", () => {
         );
     });
 
+    test("handles exception payload", done => {
+        const record = jest.fn();
+
+        executeResult(done, Result
+            .Ok(1)
+            .onSuccess(() => {
+                throw new Error("error");
+            })
+            .onFailureCompensate(error => Result.Fail(error))
+            .onFailure(error => { 
+                expect(error).toBe("error");
+                record();
+            }),
+            () => {
+                expect(record).toBeCalledTimes(1);
+            }
+        );
+    });
+
+    test("handles exception", done => {
+        const record = jest.fn();
+
+        executeResult(done, Result
+            .Fail("fail")
+            .onFailureCompensate(_ => {
+                record();
+                throw new Error("error");
+            })
+            .onFailure(error => { 
+                expect(error).toBe("error");
+                record();
+            }),
+            () => {
+                expect(record).toBeCalledTimes(2);
+            }
+        );
+    });
+
 });

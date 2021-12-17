@@ -1,3 +1,5 @@
+import { isNil } from "lodash";
+
 export type ResultActionType<T, V> = (arg: T) => (V | Promise<V> | Result<V>);
 export type ResultCompleteActionType<T, V> = (arg: Result<T>) => (V | Promise<V> | Result<V>);
 
@@ -48,10 +50,6 @@ export class Result<T> {
      * @returns Failed Result in case condition isn't true. Successful Result in case condition is true.
      */
     public ensure(condition: (arg: T) => boolean, error: string): Result<T> {
-        if (!error) {
-            throw Error("Cannot ensure condition, since error is not defined")
-        }
-
         this._promise = this._promise
             .then(value => condition.call(this._context, value) ?
                 Promise.resolve(value) :
@@ -68,7 +66,10 @@ export class Result<T> {
      */
     public ensureAsResult(ensurer: (value: T) => Result<boolean>, error: string): Result<T> {
         return this.onSuccess(value => ensurer(value)
-            .onSuccess(condition => condition ? Result.Ok(value) : Result.Fail<T>(error))
+            .onSuccess(condition => condition 
+                ? Result.Ok(value) 
+                : Result.Fail<T>(error)
+            )
             .onFailureCompensate(_ => Result.Fail<T>(error))
             .run()
         );
@@ -158,7 +159,7 @@ export class Result<T> {
     public onFailure(action: (arg: string) => void): Result<T> {
         this._promise = this._promise
             .catch(error => {
-                action.call(this._context, error);
+                action.call(this._context, this.getErrorString(error));
 
                 throw error;
             });
@@ -178,15 +179,16 @@ export class Result<T> {
             prevPromise
                 .then(value => resolve(value))
                 .catch(error => {
-                    let errorMessage = `${error}`;
+                    const errorMessage = this.getErrorString(error);
 
-                    if (error instanceof Error) {
-                        errorMessage = error.message;
+                    try {
+                        this.execute(action, errorMessage)
+                            .then(compensatedValue => resolve(compensatedValue))
+                            .catch(error => reject(error))
                     }
-
-                    return this.execute(action, errorMessage)
-                        .then(compensatedValue => resolve(compensatedValue))
-                        .catch(error => reject(error))
+                    catch (error) {
+                        reject(error);
+                    }
                 });
         });
 
@@ -410,9 +412,15 @@ export class Result<T> {
      * @returns New success Result in case there is a value or fail Result
      */
     static Wrap<T>(value: T | null | undefined, error: string): Result<T> {
-        return value
+        return !isNil(value)
             ? Result.Ok(value)
             : Result.Fail<T>(error);
+    }
+
+    private getErrorString(error: any) {
+        return error instanceof Error
+            ? error.message
+            : `${error}`;
     }
 
     private ignorePromiseError<T>() {

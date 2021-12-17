@@ -22,4 +22,31 @@ describe(".onFailure()", () => {
             }
         );
     });
+
+    test("handles exception", done => {
+        const record = jest.fn();
+
+        executeResult(done, Result
+            .Ok(1)
+            .onSuccess(_ => {
+                record();
+                throw new Error("error");
+            })
+            .onFailure(error => {
+                expect(error).toBe("error");
+                record();
+            })
+            .onFailure(_ => {
+                record();
+                throw new Error("error2");
+            })
+            .onFailure(error => { 
+                expect(error).toBe("error2");
+                record();
+            }),
+            () => {
+                expect(record).toBeCalledTimes(4);
+            }
+        );
+    });
 });
