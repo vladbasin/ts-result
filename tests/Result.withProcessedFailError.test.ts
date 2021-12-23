@@ -1,13 +1,13 @@
 import { Result } from "../src/Result";
 import { executeResult } from "./executeResult";
 
-describe(".withProcessedError()", () => {
+describe(".withProcessedFailError()", () => {
     test("overrides value", done => {
         const record = jest.fn();
 
         executeResult(done, Result
             .Fail("error")
-            .withProcessedError(_ => "newError")
+            .withProcessedFailError(_ => new Error("newError"))
             .onFailure(error => {
                 expect(error).toBe("newError");
                 record();

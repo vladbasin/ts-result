@@ -49,6 +49,16 @@ export class Result<T> {
      * @returns Failed Result in case condition isn't true. Successful Result in case condition is true.
      */
     public ensure(condition: (arg: T) => boolean, error: string): Result<T> {
+        return this.ensureWithError(condition, new Error(error));
+    }
+
+    /**
+     * Ensures condition is true
+     * @param condition Condition to check
+     * @param error Error to store if condition isn't true
+     * @returns Failed Result in case condition isn't true. Successful Result in case condition is true.
+     */
+    public ensureWithError(condition: (arg: T) => boolean, error: Error): Result<T> {
         this._promise = this._promise.then(value =>
             condition.call(this._context, value) ? Promise.resolve(value) : Promise.reject(error)
         );
@@ -62,11 +72,21 @@ export class Result<T> {
      * @param error Error to store if condition isn't true
      * @returns Failed Result in case condition isn't true or failed. Successful Result in case condition is true.
      */
-    public ensureAsResult(ensurer: (value: T) => Result<boolean>, error: string): Result<T> {
+    public ensureResult(ensurer: (value: T) => Result<boolean>, error: string): Result<T> {
+        return this.ensureResultWithError(ensurer, new Error(error));
+    }
+
+    /**
+     * Ensures condition is true
+     * @param ensurer Result condition to check to be true
+     * @param error Error to store if condition isn't true
+     * @returns Failed Result in case condition isn't true or failed. Successful Result in case condition is true.
+     */
+    public ensureResultWithError(ensurer: (value: T) => Result<boolean>, error: Error): Result<T> {
         return this.onSuccess(value =>
             ensurer(value)
-                .onSuccess(condition => (condition ? Result.Ok(value) : Result.Fail<T>(error)))
-                .onFailureCompensate(_ => Result.Fail<T>(error))
+                .onSuccess(condition => (condition ? Result.Ok(value) : Result.FailWithError<T>(error)))
+                .onFailureCompensate(_ => Result.FailWithError<T>(error))
                 .run()
         );
     }
@@ -79,6 +99,17 @@ export class Result<T> {
      * @returns Failed Result in case condition isn't true or failed. Successful Result in case condition is true.
      */
     public ensureAs<V>(condition: (arg: T) => boolean, error: string, action: ResultActionType<T, V>): Result<V> {
+        return this.ensureWithErrorAs(condition, new Error(error), action);
+    }
+
+    /**
+     * Ensures condition is true and then transforms result value
+     * @param condition Condition to check
+     * @param error Error to store if condition isn't true
+     * @param action Action which transforms result value
+     * @returns Failed Result in case condition isn't true or failed. Successful Result in case condition is true.
+     */
+    public ensureWithErrorAs<V>(condition: (arg: T) => boolean, error: Error, action: ResultActionType<T, V>): Result<V> {
         return this.onSuccess(value => {
             if (condition(value)) {
                 return this.execute(action, value);
@@ -86,7 +117,7 @@ export class Result<T> {
 
             this.ignorePromiseError();
 
-            return Result.Fail<V>(error);
+            return Result.FailWithError<V>(error);
         });
     }
 
@@ -248,8 +279,17 @@ export class Result<T> {
      * @param value New error
      * @returns New Result which stores new error
      */
-    public withOverridenError(newError: string): Result<T> {
-        return this.onFailureCompensate(_ => Result.Fail(newError, this._context));
+    public withOverridenFail(newError: string): Result<T> {
+        return this.withOverridenFailError(new Error(newError));
+    }
+
+    /**
+     * Overrides current error
+     * @param value New error
+     * @returns New Result which stores new error
+     */
+    public withOverridenFailError(newError: Error): Result<T> {
+        return this.onFailureCompensate(_ => Result.FailWithError(newError, this._context));
     }
 
     /**
@@ -257,8 +297,17 @@ export class Result<T> {
      * @param factory Function which accepts error and transforms into a new one
      * @returns New failed Result object, which contains processed error
      */
-    public withProcessedError(factory: (error: string) => string): Result<T> {
+    public withProcessedFail(factory: (error: string) => string): Result<T> {
         return this.onFailureCompensate(error => Result.Fail(factory(error), this._context));
+    }
+
+    /**
+     * Processes error
+     * @param factory Function which accepts error and transforms into a new one
+     * @returns New failed Result object, which contains processed error
+     */
+    public withProcessedFailError(factory: (error: Error) => Error): Result<T> {
+        return this.onFailureCompensateWithError(error => Result.FailWithError(factory(error), this._context));
     }
 
     /**
@@ -395,7 +444,18 @@ export class Result<T> {
      * @returns New Result with true or false value
      */
     static Create(isSuccess: Boolean, error: string, context?: any): Result<boolean> {
-        return isSuccess ? Result.Ok(true, context) : Result.Fail(error, context);
+        return this.CreateWithError(isSuccess, new Error(error), context);
+    }
+
+    /**
+     * Creates Result
+     * @param isSuccess Indicates whether the Result is failure or success
+     * @param error Error in for new Result in case it is failure
+     * @param context Context to execute actions in
+     * @returns New Result with true or false value
+     */
+    static CreateWithError(isSuccess: Boolean, error: Error, context?: any): Result<boolean> {
+        return isSuccess ? Result.Ok(true, context) : Result.FailWithError(error, context);
     }
 
     /**
@@ -410,7 +470,7 @@ export class Result<T> {
         let promise = new Promise<T>((resolve, reject) => {
             retryResultAction()
                 .onSuccess(value => resolve(value))
-                .onFailure(error => this.retryInternal(times, 0, delay, retryResultAction, error, resolve, reject))
+                .onFailureWithError(error => this.retryInternal(times, 0, delay, retryResultAction, error, resolve, reject))
                 .run();
         });
 
@@ -424,7 +484,17 @@ export class Result<T> {
      * @returns New success Result in case there is a value or fail Result
      */
     static Wrap<T>(value: T | null | undefined, error: string): Result<T> {
-        return !isNil(value) ? Result.Ok(value) : Result.Fail<T>(error);
+        return this.WrapWithError(value, new Error(error));
+    }
+
+    /**
+     * Creates Result based on value
+     * @param value Value to store
+     * @param error Error in case value is empty
+     * @returns New success Result in case there is a value or fail Result
+     */
+    static WrapWithError<T>(value: T | null | undefined, error: Error): Result<T> {
+        return !isNil(value) ? Result.Ok(value) : Result.FailWithError<T>(error);
     }
 
     private getErrorString(error: any) {
@@ -432,7 +502,7 @@ export class Result<T> {
     }
 
     private ignorePromiseError<T>() {
-        this._promise.catch(_ => {});
+        this._promise.catch(_ => { });
     }
 
     private execute<T, V>(action: (input: T) => V | Promise<V> | Result<V>, argument: T): Promise<V> {
@@ -456,9 +526,9 @@ export class Result<T> {
         retriedTimes: number,
         delay: number,
         retryResultAction: () => Result<T>,
-        error: string,
+        error: Error,
         resolve: (arg: T) => void,
-        reject: (arg: string) => void
+        reject: (arg: Error) => void
     ) {
         if (times === retriedTimes) {
             reject(error);
