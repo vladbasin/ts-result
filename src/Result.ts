@@ -1,3 +1,4 @@
+import { MaybeNullable } from '@vladbasin/ts-types';
 import { isNil } from 'lodash';
 
 export type ResultActionType<T, V> = (arg: T) => V | Promise<V> | Result<V>;
@@ -139,6 +140,29 @@ export class Result<T> {
      */
     public onSuccessMap<V>(action: ResultActionType<T, V>): Result<V> {
         return this.onSuccess(action);
+    }
+
+    /**
+     * Unwraps payload in case of success. In case unwrap fails (returns undefined) returns failure.
+     * @param transform Action to execute in case of success
+     * @returns If previous Result is success, return new Result from action. If previous Result is failure, does nothing (returns previous Result)
+     */
+    public onSuccessUnwrapWithError<V>(unwrapper: (arg: T) => MaybeNullable<V>, error: Error): Result<V> {
+        return this.onSuccess(payload => {
+            const unwrapped = unwrapper(payload);
+            return isNil(unwrapped)
+                ? Result.FailWithError(error)
+                : Result.Ok(unwrapped);
+        });
+    }
+
+    /**
+     * Unwraps payload in case of success. In case unwrap fails (returns undefined) returns failure.
+     * @param transform Action to execute in case of success
+     * @returns If previous Result is success, return new Result from action. If previous Result is failure, does nothing (returns previous Result)
+     */
+    public onSuccessUnwrap<V>(unwrapper: (arg: T) => MaybeNullable<V>, error: string): Result<V> {
+        return this.onSuccessUnwrapWithError(unwrapper, new Error(error));
     }
 
     /**
