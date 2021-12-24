@@ -2,13 +2,13 @@ import { Nullable } from "@vladbasin/ts-types";
 import { Result } from "../src/Result";
 import { executeResult } from "./executeResult";
 
-describe(".onSuccessUnwrap()", () => {
+describe(".ensureUnwrap()", () => {
     test("success if unwrapped", done => {
         const record = jest.fn();
 
         executeResult(done, Result
             .Ok<Nullable<number>>(1)
-            .onSuccessUnwrap(payload => payload, "error")
+            .ensureUnwrap(payload => payload, "error")
             .onSuccessMap(payload => {
                 expect(payload).toBe(1);
                 record();
@@ -26,7 +26,7 @@ describe(".onSuccessUnwrap()", () => {
 
         executeResult(done, Result
             .Ok<Nullable<number>>(null)
-            .onSuccessUnwrap(payload => payload, "error")
+            .ensureUnwrap(payload => payload, "error")
             .onSuccessMap(_ => done("Fail not expected"))
             .onFailure(error => {
                 expect(error).toBe("error");

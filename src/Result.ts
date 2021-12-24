@@ -147,7 +147,7 @@ export class Result<T> {
      * @param transform Action to execute in case of success
      * @returns If previous Result is success, return new Result from action. If previous Result is failure, does nothing (returns previous Result)
      */
-    public onSuccessUnwrapWithError<V>(unwrapper: (arg: T) => MaybeNullable<V>, error: Error): Result<V> {
+    public ensureUnwrapWithError<V>(unwrapper: (arg: T) => MaybeNullable<V>, error: Error): Result<V> {
         return this.onSuccess(payload => {
             const unwrapped = unwrapper(payload);
             return isNil(unwrapped)
@@ -161,8 +161,8 @@ export class Result<T> {
      * @param transform Action to execute in case of success
      * @returns If previous Result is success, return new Result from action. If previous Result is failure, does nothing (returns previous Result)
      */
-    public onSuccessUnwrap<V>(unwrapper: (arg: T) => MaybeNullable<V>, error: string): Result<V> {
-        return this.onSuccessUnwrapWithError(unwrapper, new Error(error));
+    public ensureUnwrap<V>(unwrapper: (arg: T) => MaybeNullable<V>, error: string): Result<V> {
+        return this.ensureUnwrapWithError(unwrapper, new Error(error));
     }
 
     /**
