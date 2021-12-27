@@ -24,8 +24,7 @@
         "generateIndex": "barrelsby -c barrelsby.json --delete -l all",
         "publish:public": "yarn publish --access public",
         "lint": "eslint .",
-        "lint:fix": "eslint --fix .",
-        "ci": "npm install"
+        "lint:fix": "eslint --fix ."
     },
     "devDependencies": {
         "@types/jest": "^27.0.3",
