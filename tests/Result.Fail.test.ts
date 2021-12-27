@@ -1,15 +1,15 @@
-import { Result } from "../src/Result";
-import { executeResult } from "./executeResult";
+import { Result } from '../src/Result';
+import { executeResult } from './executeResult';
 
-describe(".Fail()", () => {
-    test("produces fail", done => {
-        executeResult(done, Result
-            .Fail("text")
-            .onSuccess(_ => done("No success expected"))
-            .onFailure(error => {
-                expect(error).toBe("text");
-            })
+describe('.Fail()', () => {
+    test('produces fail', done => {
+        executeResult(
+            done,
+            Result.Fail('text')
+                .onSuccess(_ => done('No success expected'))
+                .onFailure(error => {
+                    expect(error).toBe('text');
+                })
         );
     });
 });
-

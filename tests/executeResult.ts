@@ -1,4 +1,4 @@
-import { Result } from "../src/Result"
+import { Result } from '../src/Result';
 
 export const executeResult = (done: jest.DoneCallback, result: Result<any>, successCallback?: () => void) => {
     result
@@ -15,4 +15,4 @@ export const executeResult = (done: jest.DoneCallback, result: Result<any>, succ
                 done();
             }
         });
-}
+};
