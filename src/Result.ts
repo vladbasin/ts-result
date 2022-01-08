@@ -1,5 +1,6 @@
 import { MaybeNullable } from '@vladbasin/ts-types';
 import { isNil } from 'lodash';
+import { Combiner } from '.';
 
 // eslint-disable-next-line no-use-before-define
 export type ResultActionType<T, V> = (arg: T) => V | Promise<V> | Result<V>;
@@ -453,9 +454,7 @@ export class Result<T> {
      * @returns New Result which stores the value of other results
      */
     static Combine<T>(results: Result<T>[]): Result<T[]> {
-        const promises = results.map(result => result.asPromise());
-
-        return new Result(Promise.all(promises));
+        return Combiner.CombineMany(results);
     }
 
     /**
