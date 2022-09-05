@@ -107,9 +107,18 @@ export class Combiner {
      * @param results Results which can be executed in parallel
      * @returns New Result which stores the value of other results
      */
-    static CombineMany(results: Result<any>[]): Result<any[]> {
+    static CombineMany<T>(results: Result<T>[]): Result<T[]> {
         const promises = results.map(result => result.asPromise());
 
         return new Result(Promise.all(promises));
+    }
+
+    /**
+     * Combines multiple Results into one
+     * @param results Results which can be executed in parallel
+     * @returns New Result which stores the value of other results
+     */
+    static CombineSettled<T>(results: Result<T>[]) {
+        return new Result(Promise.allSettled(results.map(result => result.asPromise())));
     }
 }

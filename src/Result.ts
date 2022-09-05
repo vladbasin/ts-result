@@ -458,6 +458,15 @@ export class Result<T> {
     }
 
     /**
+     * Combines multiple Results into one
+     * @param results Results which can be executed in parallel
+     * @returns New Result which stores the value of other results
+     */
+    static CombineSettled<T>(results: Result<T>[]) {
+        return Combiner.CombineSettled(results);
+    }
+
+    /**
      * Combines multiple Result factories into one
      * @param factories Factories which create Results to be executed in parallel
      * @returns New Result which stores the value of produced results
