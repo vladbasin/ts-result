@@ -1,6 +1,7 @@
 import { MaybeNullable } from '@vladbasin/ts-types';
 import { isNil } from 'lodash';
 import { Combiner } from '.';
+import { CombineFactoriesOptionsType } from './CombineFactoriesOptionsType';
 
 // eslint-disable-next-line no-use-before-define
 export type ResultActionType<T, V> = (arg: T) => V | Promise<V> | Result<V>;
@@ -449,7 +450,7 @@ export class Result<T> {
     }
 
     /**
-     * Combines multiple Results into one
+     * Combines multiple Results into one. Fails if any of the promise fails.
      * @param results Results which can be executed in parallel
      * @returns New Result which stores the value of other results
      */
@@ -458,7 +459,7 @@ export class Result<T> {
     }
 
     /**
-     * Combines multiple Results into one
+     * Combines multiple Results into one. Never fails and returns information about which results where successful and which aren't
      * @param results Results which can be executed in parallel
      * @returns New Result which stores the value of other results
      */
@@ -467,18 +468,12 @@ export class Result<T> {
     }
 
     /**
-     * Combines multiple Result factories into one
-     * @param factories Factories which create Results to be executed in parallel
+     * Combines multiple Result factories into one with concurrency and error handling.
+     * @param factories Factories which create Results to be executed
      * @returns New Result which stores the value of produced results
      */
-    static JoinFactories<T>(factories: (() => Result<T>)[]): Result<T[]> {
-        let joinedResult = Result.Ok<T[]>([]);
-
-        factories.forEach(factory => {
-            joinedResult = joinedResult.onSuccess(items => factory().onSuccess(item => items.concat([item])));
-        });
-
-        return joinedResult;
+    static CombineFactories<T>(factories: (() => Result<T>)[], options?: CombineFactoriesOptionsType): Result<T[]> {
+        return Combiner.CombineFactories(factories, options);
     }
 
     /**

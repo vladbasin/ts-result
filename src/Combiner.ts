@@ -1,4 +1,6 @@
+import pMap from 'p-map';
 import { Result } from '.';
+import { CombineFactoriesOptionsType } from './CombineFactoriesOptionsType';
 
 export class Combiner {
     /**
@@ -103,7 +105,7 @@ export class Combiner {
     }
 
     /**
-     * Combines multiple Results into one
+     * Combines multiple Results into one. Fails if any of the promise fails.
      * @param results Results which can be executed in parallel
      * @returns New Result which stores the value of other results
      */
@@ -114,11 +116,22 @@ export class Combiner {
     }
 
     /**
-     * Combines multiple Results into one
+     * Combines multiple Results into one. Never fails and returns information about which results where successful and which aren't
      * @param results Results which can be executed in parallel
      * @returns New Result which stores the value of other results
      */
     static CombineSettled<T>(results: Result<T>[]) {
         return new Result(Promise.allSettled(results.map(result => result.asPromise())));
+    }
+
+    /**
+     * Combines multiple Result factories into one with concurrency and error handling.
+     * @param factories Factories which create Results to be executed
+     * @returns New Result which stores the value of produced results
+     */
+    static CombineFactories<T>(factories: (() => Result<T>)[], options?: CombineFactoriesOptionsType): Result<T[]> {
+        return Result.FromPromise(
+            pMap(Array.from(Array(factories.length).keys()), index => factories[index]().asPromise(), options)
+        );
     }
 }
