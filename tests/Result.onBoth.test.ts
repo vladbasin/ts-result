@@ -8,15 +8,15 @@ describe('.onBoth()', () => {
         executeResult(
             done,
             Result.Fail('error')
-                .onBoth(result => {
+                .onBoth(() => {
                     record();
-                    return result;
+                    return Result.Fail('error');
                 })
                 .onFailure(_ => undefined)
                 .onSuccess(_ => undefined)
-                .onBoth(result => {
+                .onBoth(() => {
                     record();
-                    return result;
+                    return Result.Fail('error');
                 }),
             () => {
                 expect(record).toBeCalledTimes(2);
@@ -30,15 +30,15 @@ describe('.onBoth()', () => {
         executeResult(
             done,
             Result.Ok(1)
-                .onBoth(result => {
+                .onBoth(() => {
                     record();
-                    return result;
+                    return Result.Ok(1);
                 })
                 .onFailure(_ => undefined)
                 .onSuccess(_ => undefined)
-                .onBoth(result => {
+                .onBoth(() => {
                     record();
-                    return result;
+                    return Result.Ok(1);
                 }),
             () => {
                 expect(record).toBeCalledTimes(2);

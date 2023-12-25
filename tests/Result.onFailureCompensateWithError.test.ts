@@ -46,6 +46,60 @@ describe('.onFailureCompensateWithError()', () => {
         );
     });
 
+    test('does not execute success if compensated is still failure', done => {
+        const failureCompensateCall = jest.fn();
+        const failureCall = jest.fn();
+        const successCall = jest.fn();
+        const bothCall = jest.fn();
+
+        executeResult(
+            done,
+            Result.FromPromise(
+                new Promise(() => {
+                    throw new Error('error');
+                })
+            )
+                .onFailureCompensateWithError(error => {
+                    expect(error.message).toBe('error');
+                    failureCompensateCall();
+
+                    return Result.Delay(2000).onSuccess(() => Result.Fail('error'));
+                })
+                .onSuccess(() => {
+                    successCall();
+                })
+                .onSuccess(() => {
+                    successCall();
+                })
+                .onFailureWithError(() => {
+                    failureCall();
+                })
+                .void.onSuccess(() => {
+                    successCall();
+                })
+                .onFailure(() => {
+                    failureCall();
+                })
+                .onBoth(() => {
+                    bothCall();
+                    return Result.Fail('error');
+                })
+                .onSuccess(() => {
+                    successCall();
+                })
+                .onFailure(() => {
+                    failureCall();
+                })
+                .runAsResult(),
+            () => {
+                expect(failureCompensateCall).toBeCalledTimes(1);
+                expect(successCall).toBeCalledTimes(0);
+                expect(failureCall).toBeCalledTimes(3);
+                expect(bothCall).toBeCalledTimes(1);
+            }
+        );
+    });
+
     test('handles exception payload', done => {
         const record = jest.fn();
 
@@ -55,7 +109,7 @@ describe('.onFailureCompensateWithError()', () => {
                 .onSuccess(() => {
                     throw new Error('error');
                 })
-                .onFailureCompensate(error => Result.Fail(error))
+                .onFailureCompensateWithError(error => Result.FailWithError(error))
                 .onFailure(error => {
                     expect(error).toBe('error');
                     record();

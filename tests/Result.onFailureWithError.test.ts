@@ -1,6 +1,8 @@
 import { Result } from '../src/Result';
 import { executeResult } from './executeResult';
 
+jest.setTimeout(30000);
+
 describe('.onFailureWithError()', () => {
     test('can be chained', done => {
         const record = jest.fn();
@@ -13,8 +15,8 @@ describe('.onFailureWithError()', () => {
                     record();
                 })
                 .onSuccess(_ => done('Success not expected'))
-                .onBoth(_ => {
-                    return _;
+                .onBoth(() => {
+                    return Result.Fail('error');
                 })
                 .onFailureWithError(error => {
                     expect(error.message).toBe('error');

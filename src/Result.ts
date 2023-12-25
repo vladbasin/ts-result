@@ -6,10 +6,10 @@ import { CombineFactoriesOptionsType } from './CombineFactoriesOptionsType';
 // eslint-disable-next-line no-use-before-define
 export type ResultActionType<T, V> = (arg: T) => V | Promise<V> | Result<V>;
 // eslint-disable-next-line no-use-before-define
-export type ResultCompleteActionType<T, V> = (arg: Result<T>) => V | Promise<V> | Result<V>;
+export type ResultCompleteActionType<T, V> = () => V | Promise<V> | Result<V>;
 
 export class Result<T> {
-    private _promise: Promise<T>;
+    private _promise: Promise<any>;
 
     private _context?: any;
 
@@ -100,7 +100,6 @@ export class Result<T> {
             ensurer(value)
                 .onSuccess(condition => (condition ? Result.Ok(value) : Result.FailWithError<T>(error)))
                 .onFailureCompensate(_ => Result.FailWithError<T>(error))
-                .run()
         );
     }
 
@@ -132,8 +131,6 @@ export class Result<T> {
                 return this.execute(action, value);
             }
 
-            this.ignorePromiseError();
-
             return Result.FailWithError<V>(error);
         });
     }
@@ -144,9 +141,9 @@ export class Result<T> {
      * @returns If previous Result is success, return new Result from action. If previous Result is failure, does nothing (returns previous Result)
      */
     public onSuccess<V>(action: ResultActionType<T, V>): Result<V> {
-        const newPromise = this._promise.then(value => this.execute(action, value));
+        this._promise = this._promise.then(value => this.execute(action, value));
 
-        return new Result(newPromise, this._context);
+        return this as unknown as Result<V>;
     }
 
     /**
@@ -254,23 +251,16 @@ export class Result<T> {
      * @returns If previous Result is success, then does nothing. If previouse Result is failure, then tries to execute action and returns promise from this action.
      */
     public onFailureCompensateWithError(action: ResultActionType<Error, T>): Result<T> {
-        const prevPromise = this._promise;
-
-        const newPromise = new Promise<T>((resolve, reject) => {
-            prevPromise
-                .then(value => resolve(value))
-                .catch(error => {
-                    try {
-                        this.execute(action, error)
-                            .then(compensatedValue => resolve(compensatedValue))
-                            .catch(e => reject(e));
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
+        this._promise = this._promise.catch(error => {
+            try {
+                const result = this.execute(action, error);
+                return result;
+            } catch (e) {
+                return Promise.reject(e);
+            }
         });
 
-        return new Result(newPromise, this._context);
+        return this;
     }
 
     /**
@@ -291,12 +281,10 @@ export class Result<T> {
         return this.onSuccess(_ => {
             isExecuted = true;
 
-            return action.call(this._context, this);
+            return action.call(this._context);
         }).onFailureCompensate(error => {
-            this.ignorePromiseError();
-
             if (!isExecuted) {
-                return action.call(this._context, this);
+                return action.call(this._context);
             }
 
             return Result.Fail(error);
@@ -349,7 +337,7 @@ export class Result<T> {
     }
 
     /**
-     * Executes commands in Result
+     * Executes commands in Result ignoring uncached errors
      * @returns Promise which represents the result
      */
     public run(): Promise<T> {
@@ -358,11 +346,11 @@ export class Result<T> {
     }
 
     /**
-     * Executes commands in Result
+     * Executes commands in Result ignoring uncached errors
      * @returns Result with promise
      */
     public runAsResult(): Result<T> {
-        this.ignorePromiseError();
+        this._promise.catch(_ => undefined);
 
         return this;
     }
@@ -543,13 +531,7 @@ export class Result<T> {
         return error instanceof Error ? error.message : `${error}`;
     }
 
-    private ignorePromiseError() {
-        this._promise.catch(_ => undefined);
-    }
-
     private execute<K, V>(action: (input: K) => V | Promise<V> | Result<V>, argument: K): Promise<V> {
-        this.run();
-
         const actionResult = action.call(this._context, argument);
 
         if (actionResult instanceof Promise) {

@@ -15,8 +15,8 @@ describe('.onSuccessMap()', () => {
                     return payload;
                 })
                 .onFailure(_ => done('Fail not expected'))
-                .onBoth(_ => {
-                    return _;
+                .onBoth(() => {
+                    return Result.Ok(1);
                 })
                 .onSuccessMap(payload => {
                     expect(payload).toBe(1);

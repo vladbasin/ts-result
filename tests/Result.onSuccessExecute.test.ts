@@ -14,8 +14,8 @@ describe('.onSuccessExecute()', () => {
                     record();
                 })
                 .onFailure(_ => done('Fail not expected'))
-                .onBoth(_ => {
-                    return _;
+                .onBoth(() => {
+                    return Result.Ok(1);
                 })
                 .onSuccessExecute(payload => {
                     expect(payload).toBe(1);

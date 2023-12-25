@@ -13,8 +13,8 @@ describe('.onFailure()', () => {
                     record();
                 })
                 .onSuccess(_ => done('Success not expected'))
-                .onBoth(_ => {
-                    return _;
+                .onBoth(() => {
+                    return Result.Fail('error');
                 })
                 .onFailure(error => {
                     expect(error).toBe('error');
