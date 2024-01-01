@@ -3,45 +3,57 @@ import { executeResult } from './executeResult';
 
 describe('.onBoth()', () => {
     test('is called when failure', done => {
-        const record = jest.fn();
+        const bothCall = jest.fn();
+        const failCall = jest.fn();
+        const successCall = jest.fn();
 
         executeResult(
             done,
             Result.Fail('error')
                 .onBoth(() => {
-                    record();
+                    bothCall();
                     return Result.Fail('error');
                 })
-                .onFailure(_ => undefined)
-                .onSuccess(_ => undefined)
+                .onFailure(_ => failCall())
+                .onSuccess(_ => successCall())
                 .onBoth(() => {
-                    record();
+                    bothCall();
                     return Result.Fail('error');
-                }),
+                })
+                .onFailure(_ => failCall())
+                .onSuccess(_ => successCall()),
             () => {
-                expect(record).toBeCalledTimes(2);
+                expect(bothCall).toBeCalledTimes(2);
+                expect(failCall).toBeCalledTimes(2);
+                expect(successCall).toBeCalledTimes(0);
             }
         );
     });
 
     test('is called when success', done => {
-        const record = jest.fn();
+        const bothCall = jest.fn();
+        const failCall = jest.fn();
+        const successCall = jest.fn();
 
         executeResult(
             done,
             Result.Ok(1)
                 .onBoth(() => {
-                    record();
+                    bothCall();
                     return Result.Ok(1);
                 })
-                .onFailure(_ => undefined)
-                .onSuccess(_ => undefined)
+                .onFailure(_ => failCall())
+                .onSuccess(_ => successCall())
                 .onBoth(() => {
-                    record();
+                    bothCall();
                     return Result.Ok(1);
-                }),
+                })
+                .onFailure(_ => failCall())
+                .onSuccess(_ => successCall()),
             () => {
-                expect(record).toBeCalledTimes(2);
+                expect(bothCall).toBeCalledTimes(2);
+                expect(failCall).toBeCalledTimes(0);
+                expect(successCall).toBeCalledTimes(2);
             }
         );
     });

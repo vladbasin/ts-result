@@ -282,12 +282,34 @@ export class Result<T> {
             isExecuted = true;
 
             return action.call(this._context);
-        }).onFailureCompensate(error => {
+        }).onFailureCompensateWithError(error => {
             if (!isExecuted) {
                 return action.call(this._context);
             }
 
-            return Result.Fail(error);
+            return Result.FailWithError(error);
+        });
+    }
+
+    /**
+     * Executes action in both fail and success cases. Payload from previous result is NOT transformed by action result.
+     * @returns New Result from action
+     */
+    public onBothExecute(action: ResultCompleteActionType<T, any>): Result<T> {
+        let isExecuted = false;
+
+        return this.onSuccessExecute(() => {
+            isExecuted = true;
+
+            return action.call(this._context);
+        }).onFailureCompensateWithError(error => {
+            if (!isExecuted) {
+                return Result.FailWithError<T>(error)
+                    .onFailureCompensate(() => action.call(this._context))
+                    .onSuccess(() => Result.FailWithError<T>(error));
+            }
+
+            return Result.FailWithError<T>(error);
         });
     }
 
