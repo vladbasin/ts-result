@@ -1,16 +1,16 @@
 import { Result } from '../src/Result';
 import { executeResult } from './executeResult';
 
-describe('.withOverridenValue()', () => {
+describe('.withOverriddenFailError()', () => {
     test('overrides value', done => {
         const record = jest.fn();
 
         executeResult(
             done,
-            Result.Ok(1)
-                .withOverridenValue(2)
-                .onSuccess(payload => {
-                    expect(payload).toBe(2);
+            Result.Fail('error')
+                .withOverriddenFailError(new Error('newError'))
+                .onFailure(error => {
+                    expect(error).toBe('newError');
                     record();
                 }),
             () => {

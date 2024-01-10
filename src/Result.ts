@@ -318,7 +318,7 @@ export class Result<T> {
      * @param value New value
      * @returns New Result which stores new value
      */
-    public withOverridenValue<V>(value: V): Result<V> {
+    public withOverriddenValue<V>(value: V): Result<V> {
         return this.onSuccess(_ => Result.Ok(value));
     }
 
@@ -327,8 +327,8 @@ export class Result<T> {
      * @param value New error
      * @returns New Result which stores new error
      */
-    public withOverridenFail(newError: string): Result<T> {
-        return this.withOverridenFailError(new Error(newError));
+    public withOverriddenFail(newError: string): Result<T> {
+        return this.withOverriddenFailError(new Error(newError));
     }
 
     /**
@@ -336,7 +336,7 @@ export class Result<T> {
      * @param value New error
      * @returns New Result which stores new error
      */
-    public withOverridenFailError(newError: Error): Result<T> {
+    public withOverriddenFailError(newError: Error): Result<T> {
         return this.onFailureCompensate(_ => Result.FailWithError(newError, this._context));
     }
 
