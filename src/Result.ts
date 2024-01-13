@@ -550,7 +550,7 @@ export class Result<T> {
     }
 
     private getErrorString(error: any) {
-        return error instanceof Error ? error.message : `${error}`;
+        return error instanceof Error || error?.message ? error.message : `${error}`;
     }
 
     private execute<K, V>(action: (input: K) => V | Promise<V> | Result<V>, argument: K): Promise<V> {
