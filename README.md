@@ -47,7 +47,7 @@ finally {
 However, **with this library instead** you can write nice readable chains of methods:
 
 ```typescript
-import { Result } from "@vladbasin/Result";
+import { Result } from "@vladbasin/ts-result";
 
 showLoader();
 Result
@@ -87,7 +87,7 @@ if (!passwordRepeatValidation.success) {
 With this library (readable code, reusable logic)
 
 ```typescript
-import { Result } from "@vladbasin/Result";
+import { Result } from "@vladbasin/ts-result";
 
 Result
     .Start()
