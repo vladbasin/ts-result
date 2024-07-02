@@ -325,7 +325,7 @@ export class Result<T> {
     }
 
     /**
-     * Processes error
+     * Processes error. Ensures that subsequent errors are not overridden
      * @param factory Function which accepts error and transforms into a new one
      * @returns New failed Result object, which contains processed error
      */
@@ -338,7 +338,7 @@ export class Result<T> {
     }
 
     /**
-     * Processes error
+     * Processes error. Ensures that subsequent errors are not overridden
      * @param factory Function which accepts error and transforms into a new one
      * @returns New failed Result object, which contains processed error
      */
@@ -387,7 +387,6 @@ export class Result<T> {
 
     /**
      * Creates Result with optional context
-     * @param context Context to execute actions in
      * @returns New Promise with true value
      */
     static Start(): Result<boolean> {
@@ -397,7 +396,6 @@ export class Result<T> {
     /**
      * Creates Result with value and optional context
      * @param value Value to store in Result
-     * @param context Context to execute actions in
      * @returns New Promise with stored value
      */
     static Ok<T>(value: T): Result<T> {
@@ -424,7 +422,6 @@ export class Result<T> {
     /**
      * Creates Result with failure
      * @param error Error message of the failure
-     * @param context Context to execute actions in
      * @returns New Result object with failure
      */
     static Fail<T>(error: string): Result<T> {
@@ -434,7 +431,6 @@ export class Result<T> {
     /**
      * Creates Result with failure
      * @param error Error of the failure
-     * @param context Context to execute actions in
      * @returns New Result object with failure
      */
     static FailWithError<T>(error: Error): Result<T> {
@@ -442,9 +438,26 @@ export class Result<T> {
     }
 
     /**
+     * Creates Result with failure. Ensures that processing methods don't override this error
+     * @param error Error of the failure
+     * @returns New Result object with failure
+     */
+    static FailAsProcessed<T>(error: string): Result<T> {
+        return Result.FailAsProcessedWithError(new Error(error));
+    }
+
+    /**
+     * Creates Result with failure. Ensures that processing methods don't override this error
+     * @param error Error of the failure
+     * @returns New Result object with failure
+     */
+    static FailAsProcessedWithError<T>(error: Error): Result<T> {
+        return new Result(Promise.reject(new ProcessedError(error.message, error)));
+    }
+
+    /**
      * Creates Result from promise
      * @param promise Promise to track
-     * @param context Context to execute actions in
      * @returns New Result object from Promise
      */
     static FromPromise<T>(promise: Promise<T>): Result<T> {
@@ -482,7 +495,6 @@ export class Result<T> {
      * Creates Result
      * @param isSuccess Indicates whether the Result is failure or success
      * @param error Error in for new Result in case it is failure
-     * @param context Context to execute actions in
      * @returns New Result with true or false value
      */
     static Create(isSuccess: boolean, error: string): Result<boolean> {
@@ -493,7 +505,6 @@ export class Result<T> {
      * Creates Result
      * @param isSuccess Indicates whether the Result is failure or success
      * @param error Error in for new Result in case it is failure
-     * @param context Context to execute actions in
      * @returns New Result with true or false value
      */
     static CreateWithError(isSuccess: boolean, error: Error): Result<boolean> {
@@ -505,7 +516,6 @@ export class Result<T> {
      * @param times Number of attempts
      * @param delay Delay between attempts
      * @param retryResultAction Action to execute and retry
-     * @param context  Context to execute actions in
      * @returns New Result which represents either failure or success
      */
     static Retry<T>(times: number, delay: number, retryResultAction: () => Result<T>): Result<T> {
