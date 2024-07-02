@@ -307,7 +307,7 @@ export class Result<T> {
     }
 
     /**
-     * Overrides current error
+     * Overrides current error. Marks it as processed, so that subsequent processing calls don't override it
      * @param value New error
      * @returns New Result which stores new error
      */
@@ -316,12 +316,12 @@ export class Result<T> {
     }
 
     /**
-     * Overrides current error
+     * Overrides current error. Marks it as processed, so that subsequent processing calls don't override it
      * @param value New error
      * @returns New Result which stores new error
      */
     public withOverriddenFailError(newError: Error): Result<T> {
-        return this.onFailureCompensate(_ => Result.FailWithError(newError));
+        return this.onFailureCompensate(_ => Result.FailAsProcessedWithError(newError));
     }
 
     /**
