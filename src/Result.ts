@@ -1,6 +1,6 @@
 import { MaybeNullable } from '@vladbasin/ts-types';
 import { isNil } from 'lodash';
-import { Combiner } from '.';
+import { Combiner, ProcessedError } from '.';
 import { CombineFactoriesOptionsType } from './CombineFactoriesOptionsType';
 
 // eslint-disable-next-line no-use-before-define
@@ -9,13 +9,10 @@ export type ResultActionType<T, V> = (arg: T) => V | Promise<V> | Result<V>;
 export type ResultCompleteActionType<T, V> = () => V | Promise<V> | Result<V>;
 
 export class Result<T> {
-    private _promise: Promise<any>;
+    private _promise: Promise<T>;
 
-    private _context?: any;
-
-    constructor(promise: Promise<T>, context?: any) {
+    constructor(promise: Promise<T>) {
         this._promise = promise;
-        this._context = context;
     }
 
     /**
@@ -24,17 +21,6 @@ export class Result<T> {
      */
     public asPromise(): Promise<T> {
         return this._promise;
-    }
-
-    /**
-     * Sets the context which will be used to call actions passed to other Result methods
-     * @param context Target context
-     * @returns Same Result object
-     */
-    public withContext(context: any) {
-        this._context = context;
-
-        return this;
     }
 
     /**
@@ -73,7 +59,7 @@ export class Result<T> {
      */
     public ensureWithError(condition: (arg: T) => boolean, error: Error): Result<T> {
         this._promise = this._promise.then(value =>
-            condition.call(this._context, value) ? Promise.resolve(value) : Promise.reject(error)
+            condition(value) ? Promise.resolve(value) : Promise.reject(error)
         );
 
         return this;
@@ -141,9 +127,7 @@ export class Result<T> {
      * @returns If previous Result is success, return new Result from action. If previous Result is failure, does nothing (returns previous Result)
      */
     public onSuccess<V>(action: ResultActionType<T, V>): Result<V> {
-        this._promise = this._promise.then(value => this.execute(action, value));
-
-        return this as unknown as Result<V>;
+        return new Result(this._promise.then(value => this.execute(action, value)));
     }
 
     /**
@@ -181,13 +165,13 @@ export class Result<T> {
      * @param action Action to execute in case of success
      * @returns If previous Result is success, return new Result from action. If previous Result is failure, does nothing (returns previous Result)
      */
-    public onSuccessExecute(action: ResultActionType<T, any>): Result<T> {
-        let previousPayload: any;
+    public onSuccessExecute(action: ResultActionType<T, unknown>): Result<T> {
+        let previousPayload: T;
 
         return this.onSuccess(payload => {
             previousPayload = payload;
             return action(payload);
-        }).onSuccess(() => previousPayload as T);
+        }).onSuccess(() => previousPayload);
     }
 
     /**
@@ -217,7 +201,7 @@ export class Result<T> {
      */
     public onFailure(action: (arg: string) => void): Result<T> {
         return this.onFailureWithError(error => {
-            action.call(this._context, this.getErrorString(error));
+            action(this.getErrorString(error));
         });
     }
 
@@ -228,7 +212,7 @@ export class Result<T> {
      */
     public onFailureWithError(action: (arg: Error) => void): Result<T> {
         this._promise = this._promise.catch(error => {
-            action.call(this._context, error);
+            action(error);
 
             throw error;
         });
@@ -242,7 +226,7 @@ export class Result<T> {
      * @returns If previous Result is success, then does nothing. If previouse Result is failure, then tries to execute action and returns promise from this action.
      */
     public onFailureCompensate(action: ResultActionType<string, T>): Result<T> {
-        return this.onFailureCompensateWithError(error => action.call(this._context, this.getErrorString(error)));
+        return this.onFailureCompensateWithError(error => action(this.getErrorString(error)));
     }
 
     /**
@@ -281,10 +265,10 @@ export class Result<T> {
         return this.onSuccess(_ => {
             isExecuted = true;
 
-            return action.call(this._context);
+            return action();
         }).onFailureCompensateWithError(error => {
             if (!isExecuted) {
-                return action.call(this._context);
+                return action();
             }
 
             return Result.FailWithError(error);
@@ -295,17 +279,17 @@ export class Result<T> {
      * Executes action in both fail and success cases. Payload from previous result is NOT transformed by action result.
      * @returns New Result from action
      */
-    public onBothExecute(action: ResultCompleteActionType<T, any>): Result<T> {
+    public onBothExecute(action: ResultCompleteActionType<T, unknown>): Result<T> {
         let isExecuted = false;
 
         return this.onSuccessExecute(() => {
             isExecuted = true;
 
-            return action.call(this._context);
+            return action();
         }).onFailureCompensateWithError(error => {
             if (!isExecuted) {
-                return Result.FailWithError<T>(error)
-                    .onFailureCompensate(() => action.call(this._context))
+                return Result.FailWithError<unknown>(error)
+                    .onFailureCompensate(() => action())
                     .onSuccess(() => Result.FailWithError<T>(error));
             }
 
@@ -337,7 +321,7 @@ export class Result<T> {
      * @returns New Result which stores new error
      */
     public withOverriddenFailError(newError: Error): Result<T> {
-        return this.onFailureCompensate(_ => Result.FailWithError(newError, this._context));
+        return this.onFailureCompensate(_ => Result.FailWithError(newError));
     }
 
     /**
@@ -346,7 +330,11 @@ export class Result<T> {
      * @returns New failed Result object, which contains processed error
      */
     public withProcessedFail(factory: (error: string) => string): Result<T> {
-        return this.onFailureCompensate(error => Result.Fail(factory(error), this._context));
+        return this.onFailureCompensateWithError(originalError =>
+            originalError instanceof ProcessedError
+                ? Result.FailWithError(originalError)
+                : Result.FailWithError(new ProcessedError(factory(this.getErrorString(originalError)), originalError))
+        );
     }
 
     /**
@@ -355,7 +343,11 @@ export class Result<T> {
      * @returns New failed Result object, which contains processed error
      */
     public withProcessedFailError(factory: (error: Error) => Error): Result<T> {
-        return this.onFailureCompensateWithError(error => Result.FailWithError(factory(error), this._context));
+        return this.onFailureCompensateWithError(originalError =>
+            originalError instanceof ProcessedError
+                ? Result.FailWithError<T>(originalError)
+                : Result.FailWithError<T>(new ProcessedError(factory(originalError), originalError))
+        );
     }
 
     /**
@@ -398,8 +390,8 @@ export class Result<T> {
      * @param context Context to execute actions in
      * @returns New Promise with true value
      */
-    static Start(context?: any): Result<boolean> {
-        return Result.Ok(true, context);
+    static Start(): Result<boolean> {
+        return Result.Ok(true);
     }
 
     /**
@@ -408,8 +400,8 @@ export class Result<T> {
      * @param context Context to execute actions in
      * @returns New Promise with stored value
      */
-    static Ok<T>(value: T, context?: any): Result<T> {
-        return new Result(Promise.resolve(value), context);
+    static Ok<T>(value: T): Result<T> {
+        return new Result(Promise.resolve(value));
     }
 
     /**
@@ -435,8 +427,8 @@ export class Result<T> {
      * @param context Context to execute actions in
      * @returns New Result object with failure
      */
-    static Fail<T>(error: string, context?: any): Result<T> {
-        return Result.FailWithError(new Error(error), context);
+    static Fail<T>(error: string): Result<T> {
+        return Result.FailWithError(new Error(error));
     }
 
     /**
@@ -445,8 +437,8 @@ export class Result<T> {
      * @param context Context to execute actions in
      * @returns New Result object with failure
      */
-    static FailWithError<T>(error: Error, context?: any): Result<T> {
-        return new Result(Promise.reject(error), context);
+    static FailWithError<T>(error: Error): Result<T> {
+        return new Result(Promise.reject(error));
     }
 
     /**
@@ -455,8 +447,8 @@ export class Result<T> {
      * @param context Context to execute actions in
      * @returns New Result object from Promise
      */
-    static FromPromise<T>(promise: Promise<T>, context?: any): Result<T> {
-        return new Result(promise, context);
+    static FromPromise<T>(promise: Promise<T>): Result<T> {
+        return new Result(promise);
     }
 
     /**
@@ -493,8 +485,8 @@ export class Result<T> {
      * @param context Context to execute actions in
      * @returns New Result with true or false value
      */
-    static Create(isSuccess: boolean, error: string, context?: any): Result<boolean> {
-        return this.CreateWithError(isSuccess, new Error(error), context);
+    static Create(isSuccess: boolean, error: string): Result<boolean> {
+        return this.CreateWithError(isSuccess, new Error(error));
     }
 
     /**
@@ -504,8 +496,8 @@ export class Result<T> {
      * @param context Context to execute actions in
      * @returns New Result with true or false value
      */
-    static CreateWithError(isSuccess: boolean, error: Error, context?: any): Result<boolean> {
-        return isSuccess ? Result.Ok(true, context) : Result.FailWithError(error, context);
+    static CreateWithError(isSuccess: boolean, error: Error): Result<boolean> {
+        return isSuccess ? Result.Ok(true) : Result.FailWithError(error);
     }
 
     /**
@@ -516,7 +508,7 @@ export class Result<T> {
      * @param context  Context to execute actions in
      * @returns New Result which represents either failure or success
      */
-    static Retry<T>(times: number, delay: number, retryResultAction: () => Result<T>, context?: any): Result<T> {
+    static Retry<T>(times: number, delay: number, retryResultAction: () => Result<T>): Result<T> {
         const promise = new Promise<T>((resolve, reject) => {
             retryResultAction()
                 .onSuccess(value => resolve(value))
@@ -526,7 +518,7 @@ export class Result<T> {
                 .run();
         });
 
-        return Result.FromPromise(promise, context);
+        return Result.FromPromise(promise);
     }
 
     /**
@@ -549,12 +541,14 @@ export class Result<T> {
         return !isNil(value) ? Result.Ok(value) : Result.FailWithError<T>(error);
     }
 
-    private getErrorString(error: any) {
-        return error instanceof Error || error?.message ? error.message : `${error}`;
+    private getErrorString(error: unknown): string {
+        const errorAsRecord = error as Record<string, unknown>;
+
+        return typeof error === 'object' && 'message' in errorAsRecord ? `${errorAsRecord.message}` : `${error}`;
     }
 
     private execute<K, V>(action: (input: K) => V | Promise<V> | Result<V>, argument: K): Promise<V> {
-        const actionResult = action.call(this._context, argument);
+        const actionResult = action(argument);
 
         if (actionResult instanceof Promise) {
             return actionResult;
