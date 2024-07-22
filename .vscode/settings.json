@@ -1,0 +1,7 @@
+{
+    "editor.formatOnSave": true,
+    "explorer.autoReveal": false,
+    "files.exclude": {
+        "dist/": true,
+    },
+}
