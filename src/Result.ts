@@ -391,11 +391,17 @@ export class Result<T> {
      * @returns New Result object with the processed error.
      */
     public withProcessedFailError(factory: (error: Error) => Error): Result<T> {
-        return this.onFailureCompensateWithError(originalError =>
-            originalError instanceof ProcessedError
-                ? Result.FailWithError<T>(originalError)
-                : Result.FailWithError<T>(new ProcessedError(factory(originalError), originalError))
-        );
+        return this.onFailureCompensateWithError(originalError => {
+            if (originalError instanceof ProcessedError) {
+                return Result.FailWithError(originalError);
+            }
+
+            const factoryError = factory(originalError);
+
+            return Result.FailWithError<T>(
+                factoryError instanceof ProcessedError ? factoryError : new ProcessedError(factoryError, originalError)
+            );
+        });
     }
 
     /**
