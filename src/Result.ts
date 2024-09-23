@@ -83,7 +83,9 @@ export class Result<T> {
      */
     public ensureWithErrorAsProcessed(condition: (arg: T) => boolean, error: Error): Result<T> {
         this._promise = this._promise.then(value =>
-            condition(value) ? Promise.resolve(value) : Promise.reject(new ProcessedError(error, new Error()))
+            condition(value)
+                ? Promise.resolve(value)
+                : Promise.reject(error instanceof ProcessedError ? error : new ProcessedError(error, new Error()))
         );
 
         return this;
@@ -193,7 +195,10 @@ export class Result<T> {
      * @returns New Result object.
      */
     public ensureUnwrapAsProcessedWithError<V>(unwrapper: (arg: T) => MaybeNullable<V>, error: Error): Result<V> {
-        return this.ensureUnwrapWithError(unwrapper, new ProcessedError(error.message, error));
+        return this.ensureUnwrapWithError(
+            unwrapper,
+            error instanceof ProcessedError ? error : new ProcessedError(error.message, error)
+        );
     }
 
     /**
